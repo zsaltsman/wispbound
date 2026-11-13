@@ -1,5 +1,6 @@
 import { RoomHost } from '../shared/host';
 import { RECONNECT_GRACE } from '../shared/config';
+import { CONNECT_TIMEOUT_MS, ROGUE_SERVER, SLOW_CONNECT_MS } from './serverConfig';
 import { cleanName, type ClientMsg, type RoomState, type ServerMsg } from '../shared/protocol';
 import type { BattleSnap, Step } from '../shared/coop';
 
@@ -23,7 +24,7 @@ export interface Profile {
   key: string;
   name: string;
   look: number;
-  /** A multiplayer server typed in by hand (empty = the one this page came from). */
+  /** A multiplayer server typed in by hand (empty = the one in serverConfig.ts). */
   server: string;
   /** The last online room, for rejoining after a reload. */
   lastCode: string;
@@ -68,6 +69,11 @@ export function toSocketUrl(addr: string): string {
 export type NetStatus = 'idle' | 'connecting' | 'solo' | 'online' | 'reconnecting' | 'lost';
 type Listener = (ev: { t: 'state' } | { t: 'status' } | { t: 'steps' } | { t: 'note'; text: string } | { t: 'error'; msg: string; code: string } | { t: 'pos'; seat: number; x: number; y: number; dir: 'n' | 'e' | 's' | 'w' } | { t: 'fx'; kind: string; seat: number; text: string }) => void;
 
+type RetryError = Error & { retry?: boolean };
+
+const OFFLINE = 'YOU ARE OFFLINE. PLAY SOLO STILL WORKS.';
+const UNAVAILABLE = 'THE SERVER IS NOT ANSWERING. TRY AGAIN SOON, OR PLAY SOLO.';
+
 class RogueNet {
   profile = loadProfile();
   constructor() {
@@ -87,6 +93,8 @@ class RogueNet {
   private code = '';
   private retryUntil = 0;
   private pingTimer = 0;
+  /** True while a connection attempt has been waiting a while (the server is probably waking up). */
+  slow = false;
 
   /** The seat this browser holds, from the latest state. */
   get me() {
@@ -151,14 +159,15 @@ class RogueNet {
 
   /**
    * Where the multiplayer server is, in order: the address typed into the lobby, the one this
-   * build was made for (VITE_ROGUE_SERVER, e.g. "https://wispbound.onrender.com"), or the
-   * server this page came from.
+   * build was made for (VITE_ROGUE_SERVER), the one in serverConfig.ts, or the server this page
+   * came from.
    */
   serverUrl(): string {
     const typed = this.profile.server.trim();
     if (typed) return toSocketUrl(typed);
     const env = ((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_ROGUE_SERVER ?? '').trim();
     if (env) return toSocketUrl(env);
+    if (ROGUE_SERVER.trim()) return toSocketUrl(ROGUE_SERVER);
     return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/rogue-ws`;
   }
 
@@ -167,33 +176,81 @@ class RogueNet {
     this.leave();
     this.code = 'code' in opts ? opts.code.toUpperCase() : '';
     this.lastError = '';
+    this.slow = false;
     this.setStatus('connecting');
-    return this.open('create' in opts);
+    if (!navigator.onLine) return this.connectFailed(OFFLINE);
+    this.wake();
+    const create = 'create' in opts;
+    // only the main server can be asleep; a typed-in address gets a short wait
+    const deadline = Date.now() + (this.serverUrl() === toSocketUrl(ROGUE_SERVER) ? CONNECT_TIMEOUT_MS : 12_000);
+    const slowId = window.setTimeout(() => {
+      if (this.status !== 'connecting') return;
+      this.slow = true;
+      this.emit({ t: 'status' });
+    }, SLOW_CONNECT_MS);
+    // A sleeping server refuses or ignores the first tries while it wakes: keep knocking until
+    // the deadline, then say plainly that it is unavailable.
+    const attempt = (): Promise<void> =>
+      this.open(create, Math.min(15_000, Math.max(3_000, deadline - Date.now()))).catch((e: RetryError) => {
+        if (!e.retry || this.status !== 'connecting') throw e;
+        if (!navigator.onLine) throw new Error(OFFLINE);
+        if (Date.now() + 2_500 >= deadline) throw new Error(UNAVAILABLE);
+        return new Promise<void>((r) => window.setTimeout(r, 2_500)).then(() => {
+          if (this.status !== 'connecting') throw new Error('CANCELLED.');
+          return attempt();
+        });
+      });
+    return attempt()
+      .finally(() => {
+        window.clearTimeout(slowId);
+        this.slow = false;
+      })
+      .catch((e: Error) => this.connectFailed(e.message));
   }
 
-  private open(create: boolean): Promise<void> {
+  private connectFailed(why: string): Promise<never> {
+    this.lastError = why;
+    if (this.status === 'connecting') this.setStatus('idle');
+    return Promise.reject(new Error(why));
+  }
+
+  /**
+   * Nudge the online server awake (Render's free plan sleeps after 15 quiet minutes), so it is
+   * likely up by the time someone picks CREATE ROOM or JOIN ROOM. Silent if it fails.
+   */
+  wake() {
+    if (!navigator.onLine) return;
+    const url = this.serverUrl().replace(/^ws/i, 'http').replace(/\/rogue-ws\/?$/i, '/health');
+    try {
+      fetch(url, { cache: 'no-store' }).catch(() => {});
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private open(create: boolean, waitMs = 8_000): Promise<void> {
     return new Promise((resolve, reject) => {
       let settled = false;
-      const fail = (why: string) => {
+      const fail = (why: string, retry = false) => {
         if (settled) return;
         settled = true;
         this.lastError = why;
-        reject(new Error(why));
+        const e: RetryError = new Error(why);
+        e.retry = retry;
+        reject(e);
       };
       let ws: WebSocket;
       try {
         ws = new WebSocket(this.serverUrl());
       } catch {
-        this.setStatus('idle');
         return fail('THAT SERVER ADDRESS IS NOT VALID.');
       }
       this.ws = ws;
       const giveUp = window.setTimeout(() => {
         if (settled) return;
+        fail(UNAVAILABLE, true);
         ws.close();
-        if (this.status === 'connecting') this.setStatus('idle');
-        fail('NO ANSWER FROM THE MULTIPLAYER SERVER.');
-      }, 8000);
+      }, waitMs);
       ws.onopen = () => {
         const p = this.profile;
         this.sendRaw({ t: 'hello', key: p.key, name: p.name, look: p.look, code: this.code || undefined, create: create || undefined });
@@ -220,7 +277,6 @@ class RogueNet {
           ws.onclose = null;
           ws.close();
           this.ws = null;
-          this.setStatus('idle');
           fail(msg.msg);
         }
         this.receive(msg);
@@ -230,10 +286,7 @@ class RogueNet {
         window.clearInterval(this.pingTimer);
         if (this.ws !== ws) return;
         this.ws = null;
-        if (!settled) {
-          if (this.status === 'connecting') this.setStatus('idle');
-          return fail('COULD NOT REACH THE MULTIPLAYER SERVER.');
-        }
+        if (!settled) return fail(UNAVAILABLE, true);
         this.dropped();
       };
       ws.onerror = () => {
@@ -243,20 +296,23 @@ class RogueNet {
   }
 
   /** The line went dead mid-room: keep trying to take the seat back for as long as the host holds it. */
-  private dropped() {
+  private dropped(why = '') {
     if (this.status !== 'online' && this.status !== 'reconnecting') return;
     if (!this.retryUntil) this.retryUntil = Date.now() + RECONNECT_GRACE * 1000;
-    if (Date.now() > this.retryUntil || !this.state || this.state.phase === 'lobby') {
+    if (why || Date.now() > this.retryUntil || !this.state || this.state.phase === 'lobby') {
       this.state = null;
+      this.feed = null;
       this.seat = -1;
-      this.lastError = 'THE CONNECTION WAS LOST.';
+      this.retryUntil = 0;
+      this.lastError = why || (navigator.onLine ? 'THE CONNECTION WAS LOST.' : 'THE CONNECTION WAS LOST: YOU ARE OFFLINE.');
       return this.setStatus('lost');
     }
     this.setStatus('reconnecting');
     const id = window.setTimeout(() => {
       this.timers.delete(id);
       if (this.status !== 'reconnecting') return;
-      this.open(false).catch(() => this.dropped());
+      // the server said no outright (the room is gone): stop trying. Otherwise keep knocking.
+      this.open(false).catch((e: RetryError) => this.dropped(e.retry ? '' : e.message));
     }, 2000);
     this.timers.add(id);
   }

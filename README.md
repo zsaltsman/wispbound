@@ -303,6 +303,7 @@ Tests and tuning, all headless:
 
 ```
 npx tsx sim/rogue-net-test.ts   # four simulated players against the real server (needs `npm run server`)
+npx tsx sim/rogue-net-full.ts   # four simulated players play a whole online run, start to summary
 npx tsx sim/rogue-run.ts 20     # whole runs for 1-4 players, start to summary
 npx tsx sim/rogue-sim.ts 40     # single rooms and bosses, to tune src/rogue/shared/config.ts
 ```
@@ -329,6 +330,11 @@ Good to know:
   lost screen and can make a new room).
 - On Render's free plan the service sleeps after 15 minutes with no visitors and takes about a
   minute to wake on the next visit. A paid instance stays awake.
-- To host the game somewhere else (itch.io, Netlify) and keep multiplayer on Render, build it
-  with `VITE_ROGUE_SERVER=https://<service>.onrender.com` (see `.env.example`). Players can also
-  type a server address in the lobby's SERVER field; that always wins.
+- The game's server address lives in one place: `src/rogue/net/serverConfig.ts`
+  (`ROGUE_SERVER`, now `wss://wispbound.onrender.com/rogue-ws`). Every copy of the game, wherever
+  it is served from, connects there over a secure WebSocket. A build can override it with
+  `VITE_ROGUE_SERVER` (see `.env.example`), and players can type another address in the lobby's
+  SERVER field (e.g. `localhost:8787` to test a local server); that always wins.
+- If the server is asleep, the lobby says it is waking it up and keeps trying for up to 75
+  seconds before reporting it unavailable. PLAY SOLO never touches the network.
+- To test the live server: `ROGUE_URL=wss://<service>.onrender.com/rogue-ws npx tsx sim/rogue-net-full.ts`.

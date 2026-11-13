@@ -3,6 +3,7 @@ import { txt, box, C } from '../../ui/ui';
 import { W, H } from '../../constants';
 import { sound } from '../../audio/audio';
 import { net } from '../net/client';
+import { ROGUE_SERVER, ROGUE_SERVER_LABEL } from '../net/serverConfig';
 import { DIFFICULTIES, DIFFICULTY, MAX_PLAYERS } from '../shared/config';
 import { CODE_CHARS, CODE_LEN, NAME_MAX } from '../shared/protocol';
 import { LOOKS, RogueScene, type Key } from './common';
@@ -56,6 +57,8 @@ export class LobbyScene extends RogueScene {
       },
     });
     if (this.follow()) return;
+    // start waking the online server now, so CREATE ROOM / JOIN ROOM rarely wait for it
+    if (!net.state) net.wake();
     this.draw();
   }
 
@@ -87,6 +90,7 @@ export class LobbyScene extends RogueScene {
     if (net.state && this.mode !== 'room') {
       this.mode = 'room';
       this.sel = 1;
+      this.note = '';
     }
     if (!net.state && this.mode === 'room') {
       this.mode = 'menu';
@@ -98,6 +102,7 @@ export class LobbyScene extends RogueScene {
 
   protected onStatus() {
     if (net.status === 'lost' || (net.status === 'idle' && this.mode !== 'busy')) this.refresh();
+    else if (this.mode === 'busy') this.draw();
   }
 
   // ================================================================ drawing
@@ -146,7 +151,7 @@ export class LobbyScene extends RogueScene {
           c.add(txt(this, x0 + 92, y, '>', { color: C.white }));
         }
       } else if (m === 'SERVER') {
-        const v = this.field === 'server' ? this.buf + (this.blink ? '_' : ' ') : p.server || 'THIS ONE';
+        const v = this.field === 'server' ? this.buf + (this.blink ? '_' : ' ') : p.server || (ROGUE_SERVER ? ROGUE_SERVER_LABEL : 'THIS ONE');
         label = `SERVER ${v.length > 22 ? v.slice(-22) : v}`;
       } else if (m === 'JOIN ROOM' && this.field === 'code') {
         label = `CODE   ${this.buf.padEnd(CODE_LEN, '-').split('').join(' ')}`;
@@ -163,7 +168,7 @@ export class LobbyScene extends RogueScene {
         this.draw();
       });
     });
-    const hint = this.mode === 'busy' ? 'CONNECTING...' : this.field === 'name' ? 'TYPE A NAME. ENTER: DONE' : this.field === 'code' ? 'TYPE THE ROOM CODE. ENTER: JOIN   ESC: CANCEL' : this.field === 'server' ? 'TYPE AN ADDRESS (EMPTY = THIS ONE). ENTER: DONE' : this.note || this.menuHint();
+    const hint = this.mode === 'busy' ? (!net.slow ? 'CONNECTING...' : net.profile.server ? 'STILL TRYING TO REACH THAT SERVER...' : 'WAKING THE SERVER UP. THIS CAN TAKE UP TO A MINUTE...') : this.field === 'name' ? 'TYPE A NAME. ENTER: DONE' : this.field === 'code' ? 'TYPE THE ROOM CODE. ENTER: JOIN   ESC: CANCEL' : this.field === 'server' ? 'TYPE AN ADDRESS (EMPTY = THE MAIN SERVER). ENTER: DONE' : this.note || this.menuHint();
     c.add(txt(this, W / 2, y0 + MENU.length * 20 + 14, hint, { color: this.note && !this.field && this.mode !== 'busy' ? C.white : C.mid, origin: [0.5, 0], maxW: W - 30, align: 'center' }));
   }
 
