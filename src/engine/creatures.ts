@@ -1,0 +1,305 @@
+import type { CreatureDef } from './types';
+import { W2_CREATURES } from './creatures2';
+import { W3_CREATURES } from './creatures3';
+import { W5_CREATURES } from './creatures5';
+import { finalCreatures } from './creaturesFinal';
+import { ROGUE_CREATURES } from './creaturesRogue';
+import { ROGUE_SUPER } from './creaturesRogueSuper';
+
+// Numbers here are tuned with `npm run sim` (see sim/sim.ts).
+// Ability behaviour lives in battle.ts, keyed by ability id.
+
+export const CREATURES: CreatureDef[] = [
+  {
+    id: 'booheet',
+    name: 'BOOHEET',
+    cls: 'DEBUFFER',
+    description:
+      'A little ghost hiding underneath a bedsheet. Only its glowing eyes and tiny feet are visible.',
+    identity: 'Curses the Dutchman until its blows land like whispers.',
+    trait: 'SOUL THIEF',
+    traitDesc: 'Each HEX cuts boss damage 4%. HAUNT damage heals whoever is fighting (half, when alone).',
+    hp: 340,
+    en: 10,
+    enStart: 5,
+    regen: 3,
+    abilities: [
+      {
+        id: 'spook_bolt',
+        name: 'SPOOK BOLT',
+        short: 'Ghost bolt. +1 HEX.',
+        desc: 'Fling a wailing ghost bolt. Adds 1 HEX stack (max 5). HEX lasts 4 turns.',
+        cost: 0,
+        cd: 0,
+        kind: 'attack',
+        icon: 'i_bolt',
+      },
+      {
+        id: 'dread_wail',
+        name: 'DREAD WAIL',
+        short: 'WEAKEN 3 turns. +1 HEX.',
+        desc: 'A wail from under the sheet. Some damage, +1 HEX, and WEAKENED: the foe deals 30% less damage for 3 turns.',
+        cost: 3,
+        cd: 0,
+        kind: 'special',
+        icon: 'i_wail',
+      },
+      {
+        id: 'peekaboo',
+        name: 'PEEK-A-BOO',
+        short: 'Next boss hit fumbles.',
+        desc: 'Vanish under the sheet. SPOOKED: the next boss attack loses half its hits (single blows only graze) and its curse fails.',
+        cost: 4,
+        cd: 2,
+        kind: 'defense',
+        icon: 'i_eye',
+      },
+      {
+        id: 'night_terror',
+        name: 'NIGHT TERROR',
+        short: 'Big hit per HEX. HAUNT.',
+        desc: 'Signature. Deals bonus damage per HEX stack, adds 2 HEX, HAUNTS the boss (30 dmg each turn for 3 turns) and extends WEAKENED.',
+        cost: 7,
+        cd: 3,
+        kind: 'signature',
+        icon: 'i_skull',
+      },
+    ],
+  },
+  {
+    id: 'shipwraith',
+    name: 'SHIPWRAITH',
+    cls: 'DEFENSE',
+    description:
+      'The spirit of a drowned sailor that haunts shipwrecks. Its body resembles a miniature sunken pirate ship.',
+    identity: 'Turns the Dutchman\'s own fury back on it from behind a wall of brine.',
+    trait: 'SALVAGE',
+    traitDesc: 'When a SHIELD absorbs damage, gain 1 EN.',
+    hp: 400,
+    en: 10,
+    enStart: 5,
+    regen: 3,
+    abilities: [
+      {
+        id: 'spectral_cannon',
+        name: 'SPECTRAL CANNON',
+        short: 'Cannon shot. +1 EN.',
+        desc: 'Fire a ghostly cannonball from the tiny gun deck. Restores 1 EN.',
+        cost: 0,
+        cd: 0,
+        kind: 'attack',
+        icon: 'i_cannon',
+      },
+      {
+        id: 'barnacle_barrier',
+        name: 'BARNACLE WALL',
+        short: 'SHIELD 80 for 2 turns.',
+        desc: 'Raise a crust of spectral barnacles. SHIELD absorbs 80 damage for 2 turns.',
+        cost: 4,
+        cd: 0,
+        kind: 'defense',
+        icon: 'i_shield',
+      },
+      {
+        id: 'batten_down',
+        name: 'BATTEN DOWN',
+        short: 'Take 35% less dmg, 3 turns.',
+        desc: 'Seal every hatch. GUARD: take 35% less damage for 3 turns. Also blocks the Black Tide\'s drowning.',
+        cost: 5,
+        cd: 3,
+        kind: 'defense',
+        icon: 'i_hatch',
+      },
+      {
+        id: 'dead_mans_volley',
+        name: 'DEAD MAN VOLLEY',
+        short: 'Brace, then counter.',
+        desc: 'Signature. SHIELD 40 and REPRISAL: halve the next attack, then fire back 25 + 125% of the damage you prevented (up to 150). Heavier hits, heavier reply.',
+        cost: 6,
+        cd: 2,
+        kind: 'signature',
+        icon: 'i_volley',
+      },
+    ],
+  },
+  {
+    id: 'hauntcorn',
+    name: 'HAUNTCORN',
+    cls: 'SUPPORT',
+    description:
+      'A possessed scarecrow with a pumpkin head. Its straw arms stretch across fields to grab unsuspecting travelers.',
+    identity: 'Outlasts the storm. Heals, harvests energy, and never stays down.',
+    trait: 'ROOTED',
+    traitDesc: 'Whoever is fighting recovers 4 HP each turn, even with Hauntcorn on the bench.',
+    hp: 350,
+    en: 12,
+    enStart: 6,
+    regen: 3,
+    abilities: [
+      {
+        id: 'straw_lash',
+        name: 'STRAW LASH',
+        short: 'Lash. Heal 15% of dmg.',
+        desc: 'Straw arms stretch across the waves. Heals Hauntcorn for 15% of the damage dealt.',
+        cost: 0,
+        cd: 0,
+        kind: 'attack',
+        icon: 'i_straw',
+      },
+      {
+        id: 'harvest_moon',
+        name: 'HARVEST MOON',
+        short: 'Moon strike. Team heal.',
+        desc: 'Call down pale moonlight: it scorches the foe, restores 13% of max HP, and heals the partner on the bench 15%. Can be EMPOWERED.',
+        cost: 5,
+        cd: 2,
+        kind: 'defense',
+        icon: 'i_moon',
+      },
+      {
+        id: 'corn_ritual',
+        name: 'CORN RITUAL',
+        short: '+4 EN. EMPOWER next.',
+        desc: 'Shake the husks. Restore 4 EN, gain SHIELD 25, and EMPOWER your next ability (+60% effect).',
+        cost: 0,
+        cd: 2,
+        kind: 'special',
+        icon: 'i_corn',
+      },
+      {
+        id: 'hallowed_harvest',
+        name: 'HALLOW HARVEST',
+        short: 'Heal, cleanse, GUARD.',
+        desc: 'Signature. Heal 40, remove all curses, GUARD (take 30% less damage) for 3 turns and REGEN 8 HP for 3 turns.',
+        cost: 7,
+        cd: 4,
+        kind: 'signature',
+        icon: 'i_pumpkin',
+      },
+    ],
+  },
+  {
+    id: 'umbrawl',
+    name: 'UMBRAWL',
+    cls: 'ATTACKER',
+    description:
+      'A possessed umbrella that floats around looking for someone to follow. Opens its canopy to swallow incoming attacks.',
+    identity: 'Glass-cannon fury. Swallow a blow, then return it as a monsoon.',
+    trait: 'GUSTBORNE',
+    traitDesc: 'Critical hits refund 2 EN. Pierce crits 25% of the time.',
+    hp: 370,
+    en: 10,
+    enStart: 5,
+    regen: 3,
+    abilities: [
+      {
+        id: 'parasol_pierce',
+        name: 'PARASOL PIERCE',
+        short: 'Fast stab. High crit.',
+        desc: 'A lightning-quick stab with the tip. 25% critical chance. Restores 1 EN.',
+        cost: 0,
+        cd: 0,
+        kind: 'attack',
+        icon: 'i_pierce',
+      },
+      {
+        id: 'cyclone_spin',
+        name: 'CYCLONE SPIN',
+        short: '3-hit spinning strike.',
+        desc: 'Spin into a cyclone of ribs and canvas. Hits 3 times.',
+        cost: 4,
+        cd: 0,
+        kind: 'attack',
+        icon: 'i_spin',
+      },
+      {
+        id: 'canopy_catch',
+        name: 'CANOPY CATCH',
+        short: 'Halve next hit. CHARGE.',
+        desc: 'Open the canopy. The next attack is halved and swallowed: heal 50% of what it swallowed and become CHARGED (next attack +60%, plus 30% of the swallowed damage).',
+        cost: 3,
+        cd: 1,
+        kind: 'defense',
+        icon: 'i_canopy',
+      },
+      {
+        id: 'monsoon_plunge',
+        name: 'MONSOON PLUNGE',
+        short: 'Huge hit. EXPOSED after.',
+        desc: 'Signature. Plunge like a falling storm for massive damage. Drawback: EXPOSED, take 50% more damage until your next turn.',
+        cost: 8,
+        cd: 2,
+        kind: 'signature',
+        icon: 'i_storm',
+      },
+    ],
+  },
+  {
+    id: 'tickraith',
+    name: 'TICKRAITH',
+    cls: 'TANK',
+    description:
+      'A possessed grandfather clock. Its hands spin backward, allowing it to manipulate time during battles.',
+    identity: 'Slow and unbreakable. Stops the clock, then unwinds the wounds.',
+    trait: 'HEAVY GEARS',
+    traitDesc: 'Takes 20% less damage from attacks of 4 or more hits.',
+    hp: 600,
+    en: 10,
+    enStart: 4,
+    regen: 3,
+    abilities: [
+      {
+        id: 'pendulum_crush',
+        name: 'PENDULUM CRUSH',
+        short: 'Swing. Heavier if GUARDED.',
+        desc: 'Swing the brass pendulum like a wrecking ball. Hits harder while GUARDED. Restores 1 EN.',
+        cost: 0,
+        cd: 0,
+        kind: 'attack',
+        icon: 'i_pendulum',
+      },
+      {
+        id: 'brass_casing',
+        name: 'BRASS CASING',
+        short: 'Team takes 40% less, 3 turns.',
+        desc: 'Lock the glass and brass. GUARD: the whole team takes 40% less damage for 3 turns.',
+        cost: 3,
+        cd: 0,
+        kind: 'defense',
+        icon: 'i_shield',
+      },
+      {
+        id: 'stop_the_clock',
+        name: 'STOP THE CLOCK',
+        short: 'Hit. Boss loses its turn.',
+        desc: 'Freeze the hands and strike while time stands still. DELAYED: the foe loses its next turn and its plan is pushed back.',
+        cost: 5,
+        cd: 3,
+        kind: 'special',
+        icon: 'i_clock',
+      },
+      {
+        id: 'rewind',
+        name: 'REWIND',
+        short: 'Undo damage. Hit back.',
+        desc: 'Signature. Spin the hands backward: restore 80% of the damage taken over the last 3 boss turns, and the hands strike back at the foe.',
+        cost: 6,
+        cd: 3,
+        kind: 'signature',
+        icon: 'i_rewind',
+      },
+    ],
+  },
+];
+
+/** Every creature in the game: the five Hollowhaven spirits and the four temple creatures. */
+const BASE_CREATURES: CreatureDef[] = [...CREATURES, ...W2_CREATURES, ...W3_CREATURES, ...W5_CREATURES];
+/** ...and the final battle's supercharged forms and the guardian, built on them. */
+export const ALL_CREATURES: CreatureDef[] = [...BASE_CREATURES, ...finalCreatures(BASE_CREATURES)];
+
+export function getCreature(id: string): CreatureDef {
+  // (the dungeon mode's own five spirits are found here too, but are in none of the story's lists)
+  const c = ALL_CREATURES.find((x) => x.id === id) ?? ROGUE_CREATURES.find((x) => x.id === id) ?? ROGUE_SUPER.find((x) => x.id === id);
+  if (!c) throw new Error('Unknown creature ' + id);
+  return c;
+}

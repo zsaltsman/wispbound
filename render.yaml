@@ -1,0 +1,16 @@
+# Render Blueprint: one web service that serves the game AND hosts its multiplayer rooms.
+# Render: New > Blueprint > pick this repository. (Or make the service by hand with the
+# same build and start commands, see README "Hosting online multiplayer on Render".)
+services:
+  - type: web
+    name: wispbound
+    runtime: node
+    plan: free
+    # --include=dev: vite and typescript (devDependencies) are needed to build the game
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22

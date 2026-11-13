@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>WISPBOUND</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Cpath d='M3 10h10l-2 3H5z M8 2v8 M5 4h6v4H5z' stroke='%23fff' fill='%23bfbfbf'/%3E%3C/svg%3E" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+      body {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        font-family: 'Courier New', Courier, monospace; color: #bfbfbf;
+        -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+      }
+      #frame {
+        padding: 6px; background: #404040;
+        border: 2px solid #808080; box-shadow: 0 0 0 2px #000, 0 0 0 4px #404040;
+      }
+      #game { position: relative; background: #000; }
+      #game canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+      #bar {
+        display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center;
+        margin-top: 10px; font-size: 12px; font-weight: bold; letter-spacing: 1px; user-select: none;
+      }
+      #bar button {
+        font: inherit; color: #fff; background: #000; border: 2px solid #808080;
+        padding: 3px 8px; cursor: pointer; text-transform: uppercase;
+      }
+      #bar button:hover, #bar button:focus-visible { border-color: #fff; outline: none; }
+      #bar .vol { display: inline-flex; align-items: center; gap: 4px; }
+      #bar .pips { letter-spacing: 0; color: #fff; min-width: 80px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div id="frame"><div id="game"></div></div>
+    <div id="bar">
+      <button id="b-sound" title="Toggle sound">SOUND: ON</button>
+      <span class="vol">
+        <button id="b-voldn" title="Volume down">-</button>
+        <span class="pips" id="pips"></span>
+        <button id="b-volup" title="Volume up">+</button>
+      </span>
+      <button id="b-speed" title="Animation speed">SPEED: 1X</button>
+      <button id="b-motion" title="Reduce camera motion and flashes">MOTION: FULL</button>
+      <button id="b-full" title="Fullscreen">FULLSCREEN</button>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
