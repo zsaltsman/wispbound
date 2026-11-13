@@ -16,9 +16,9 @@ export const ROGUE_SERVER_LABEL = 'WISPBOUND.ONRENDER.COM';
 
 /**
  * How long to keep trying before saying the server is unavailable. Render's free plan puts the
- * server to sleep after 15 quiet minutes, and waking it takes up to about a minute.
+ * server to sleep after 15 quiet minutes, and waking it can take a minute or two.
  */
-export const CONNECT_TIMEOUT_MS = 75_000;
+export const CONNECT_TIMEOUT_MS = 150_000;
 
 /** After this long without an answer, the lobby explains that the server is waking up. */
 export const SLOW_CONNECT_MS = 5_000;

@@ -335,6 +335,6 @@ Good to know:
   it is served from, connects there over a secure WebSocket. A build can override it with
   `VITE_ROGUE_SERVER` (see `.env.example`), and players can type another address in the lobby's
   SERVER field (e.g. `localhost:8787` to test a local server); that always wins.
-- If the server is asleep, the lobby says it is waking it up and keeps trying for up to 75
+- If the server is asleep, the lobby says it is waking it up and keeps trying for up to 150
   seconds before reporting it unavailable. PLAY SOLO never touches the network.
 - To test the live server: `ROGUE_URL=wss://<service>.onrender.com/rogue-ws npx tsx sim/rogue-net-full.ts`.

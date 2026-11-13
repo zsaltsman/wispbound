@@ -168,7 +168,7 @@ export class LobbyScene extends RogueScene {
         this.draw();
       });
     });
-    const hint = this.mode === 'busy' ? (!net.slow ? 'CONNECTING...' : net.profile.server ? 'STILL TRYING TO REACH THAT SERVER...' : 'WAKING THE SERVER UP. THIS CAN TAKE UP TO A MINUTE...') : this.field === 'name' ? 'TYPE A NAME. ENTER: DONE' : this.field === 'code' ? 'TYPE THE ROOM CODE. ENTER: JOIN   ESC: CANCEL' : this.field === 'server' ? 'TYPE AN ADDRESS (EMPTY = THE MAIN SERVER). ENTER: DONE' : this.note || this.menuHint();
+    const hint = this.mode === 'busy' ? (!net.slow ? 'CONNECTING...' : net.profile.server ? 'STILL TRYING TO REACH THAT SERVER...' : 'WAKING THE SERVER UP. THIS CAN TAKE A MINUTE OR TWO...') : this.field === 'name' ? 'TYPE A NAME. ENTER: DONE' : this.field === 'code' ? 'TYPE THE ROOM CODE. ENTER: JOIN   ESC: CANCEL' : this.field === 'server' ? 'TYPE AN ADDRESS (EMPTY = THE MAIN SERVER). ENTER: DONE' : this.note || this.menuHint();
     c.add(txt(this, W / 2, y0 + MENU.length * 20 + 14, hint, { color: this.note && !this.field && this.mode !== 'busy' ? C.white : C.mid, origin: [0.5, 0], maxW: W - 30, align: 'center' }));
   }
 
